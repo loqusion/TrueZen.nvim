@@ -3,11 +3,14 @@ local M = {}
 M.running = false
 local data = require("true-zen.utils.data")
 local echo = require("true-zen.utils.echo")
+local global = require("true-zen.global")
 
 function M.on()
 	if M.running then
 		return
 	end
+
+	global.off()
 
 	data.do_callback("focus", "open", "pre")
 

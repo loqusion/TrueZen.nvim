@@ -4,6 +4,7 @@ M.running = false
 local data = require("true-zen.utils.data")
 local config = require("true-zen.config").options
 local colors = require("true-zen.utils.colors")
+local global = require("true-zen.global")
 local IGNORED_BUF_TYPES = data.set_of(config.modes.minimalist.ignored_buf_types)
 
 local saved_opts = {}
@@ -95,6 +96,8 @@ function M.on()
 	if M.running then
 		return
 	end
+
+	global.off()
 
 	data.do_callback("minimalist", "open", "pre")
 

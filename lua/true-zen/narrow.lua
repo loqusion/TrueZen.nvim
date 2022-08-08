@@ -4,6 +4,7 @@ local echo = require("true-zen.utils.echo")
 local config = require("true-zen.config").options
 local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
+local global = require("true-zen.global")
 local FOLDS_STYLE = config.modes.narrow.folds_style
 
 vim.g.active_buffs = 0
@@ -40,6 +41,12 @@ local function normalize_line(line, mode)
 end
 
 function M.on(line1, line2)
+	if vim.b.tz_narrowed_buffer then
+		return
+	end
+
+	global.off()
+
 	data.do_callback("narrow", "open", "pre")
 
 	local beg_line = normalize_line(line1, "head")
@@ -98,6 +105,10 @@ function M.on(line1, line2)
 end
 
 function M.off()
+	if not vim.b.tz_narrowed_buffer then
+		return
+	end
+
 	data.do_callback("narrow", "close", "pre")
 
 	vim.g.active_buffs = (vim.g.active_buffs > 0 and vim.g.active_buffs or 1) - 1

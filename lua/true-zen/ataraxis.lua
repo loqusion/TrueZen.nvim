@@ -5,6 +5,7 @@ local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
 local minimalist = require("true-zen.minimalist")
 local config = require("true-zen.config").options
+local global = require('true-zen.global')
 local padding = config.modes.ataraxis.padding
 local minimum_writing_area = config.modes.ataraxis.minimum_writing_area
 local CARDINAL_POINTS = { left = "width", right = "width", top = "height", bottom = "height" }
@@ -146,6 +147,8 @@ function M.on()
 	if M.running then
 		return
 	end
+
+	global.off()
 
 	data.do_callback("ataraxis", "open", "pre")
 
