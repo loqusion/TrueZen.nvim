@@ -61,8 +61,6 @@ local function save_opts()
 	end
 
 	original_opts.highlights = {
-		StatusLine = colors.get_hl("StatusLine"),
-		StatusLineNC = colors.get_hl("StatusLineNC"),
 		TabLine = colors.get_hl("TabLine"),
 		TabLineFill = colors.get_hl("TabLineFill"),
 	}
