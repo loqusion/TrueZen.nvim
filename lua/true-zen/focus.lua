@@ -1,30 +1,37 @@
 local M = {}
 
 M.running = false
-local cmd = vim.cmd
 local data = require("true-zen.utils.data")
 local echo = require("true-zen.utils.echo")
 
 function M.on()
+	if M.running then
+		return
+	end
+
 	data.do_callback("focus", "open", "pre")
 
 	if vim.fn.winnr("$") == 1 then
 		echo("there is only one window open", "error")
 		return
 	end
-	cmd("tab split")
+	vim.cmd("tab split")
 	M.running = true
 
-	data.do_callback("focus", "open", "pos")
+	data.do_callback("focus", "open", "post")
 end
 
 function M.off()
+	if not M.running then
+		return
+	end
+
 	data.do_callback("focus", "close", "pre")
 
-	cmd("tabclose")
+	vim.cmd("tabclose")
 	M.running = false
 
-	data.do_callback("focus", "close", "pos")
+	data.do_callback("focus", "close", "post")
 end
 
 function M.toggle()

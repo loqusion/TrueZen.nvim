@@ -105,9 +105,9 @@ true-zen comes with the following defaults:
 			},
 			callbacks = { -- run functions when opening/closing Ataraxis mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		minimalist = {
@@ -127,9 +127,9 @@ true-zen comes with the following defaults:
 			},
 			callbacks = { -- run functions when opening/closing Minimalist mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		narrow = {
@@ -141,17 +141,17 @@ true-zen comes with the following defaults:
 			run_ataraxis = true, -- display narrowed text in a Ataraxis session
 			callbacks = { -- run functions when opening/closing Narrow mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		focus = {
 			callbacks = { -- run functions when opening/closing Focus mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		}
 	},
@@ -238,9 +238,9 @@ Every mode has callbacks available in their conf:
 ```lua
 callbacks = {
 	open_pre = nil,
-	open_pos = nil,
+	open_post = nil,
 	close_pre = nil,
-	close_pos = nil
+	close_post = nil
 },
 ```
 
@@ -252,7 +252,7 @@ vim.g.tz_disable_mode_status_when
 Where:
 + mode: `ataraxis`, `minimalist`, `narrow` or `focus`
 + status: `open` or `close`
-+ when: `pre` or `pos`
++ when: `pre` or `post`
 
 For example: Ataraxis mode uses Minimalist mode to hide some of NeoVim's UI components, so to stop Minimalist mode from running its `open_pre` callback this could be set within Ataraxis' config:
 

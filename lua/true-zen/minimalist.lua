@@ -1,134 +1,134 @@
 local M = {}
 
 M.running = false
-local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
-local cnf = require("true-zen.config").options
-local o = vim.o
-local cmd = vim.cmd
-local fn = vim.fn
-local w = vim.w
-local api = vim.api
-local IGNORED_BUF_TYPES = data.set_of(cnf.modes.minimalist.ignored_buf_types)
+local config = require("true-zen.config").options
+local colors = require("true-zen.utils.colors")
+local IGNORED_BUF_TYPES = data.set_of(config.modes.minimalist.ignored_buf_types)
 
-local original_opts = {}
+local saved_opts = {}
+local saved_highlights = {}
 
-api.nvim_create_augroup("TrueZenMinimalist", {
+vim.api.nvim_create_augroup("TrueZenMinimalist", {
 	clear = true,
 })
 
--- reference: https://vim.fandom.com/wiki/Run_a_command_in_multiple_buffers
-local function alldo(run)
-	local tab = fn.tabpagenr()
-	local winnr = fn.winnr()
-	local buffer = fn.bufnr("%")
-
-	for _, command in pairs(run) do
-		-- tapped together solution, but works! :)
-		cmd(
-			[[windo if &modifiable == 1 && &buflisted == 1 && &bufhidden == "" | exe "let g:my_buf = bufnr(\"%\") | exe \"bufdo ]]
-				.. command
-				.. [[\" | exe \"buffer \" . g:my_buf" | endif]]
-		)
-	end
-
-	w.tz_buffer = nil
-
-	cmd("tabn " .. tab)
-	cmd(winnr .. " wincmd w")
-	cmd("buffer " .. buffer)
+local function is_ignored_buftype(win_handle)
+	local buf_handle = vim.api.nvim_win_get_buf(win_handle)
+	local buftype = vim.api.nvim_buf_get_option(buf_handle, "buftype")
+	return IGNORED_BUF_TYPES[buftype] ~= nil
 end
 
-local function save_opts()
-	-- check if current window's buffer type matches any of IGNORED_BUF_TYPES, if so look for one that doesn't
-	local suitable_window = fn.winnr()
-	local currtab = fn.tabpagenr()
-	if IGNORED_BUF_TYPES[fn.gettabwinvar(currtab, suitable_window, "&buftype")] ~= nil then
-		for i = 1, fn.winnr("$") do
-			if IGNORED_BUF_TYPES[fn.gettabwinvar(currtab, i, "&buftype")] == nil then
-				suitable_window = i
-				goto continue
-			end
+local function get_suitable_window_handle()
+	local current_window_handle = 0
+	if not is_ignored_buftype(current_window_handle) then
+		return current_window_handle
+	end
+
+	local windows = vim.api.nvim_tabpage_list_wins(0)
+	for _, win_handle in ipairs(windows) do
+		if not is_ignored_buftype(win_handle) then
+			return win_handle
 		end
 	end
-	::continue::
 
-	-- get the options from suitable_window
-	for user_opt, val in pairs(cnf.modes.minimalist.options) do
-		local opt = fn.gettabwinvar(currtab, suitable_window, "&" .. user_opt)
-		original_opts[user_opt] = (type(opt) == "number" and (opt == 1 and true or false) or opt)
-		o[user_opt] = val
+	return nil
+end
+
+local function is_special_opt(opt_name)
+	return opt_name == "number" or opt_name == "relativenumber"
+end
+
+local function set_opt_for_every_window(name, value)
+	local windows = vim.api.nvim_tabpage_list_wins(0)
+	for _, win_handle in ipairs(windows) do
+		vim.api.nvim_win_set_option(win_handle, name, value)
 	end
+end
 
-	original_opts.highlights = {
-		StatusLine = colors.get_hl("StatusLine"),
-		StatusLineNC = colors.get_hl("StatusLineNC"),
+function M.set_opts()
+	local suitable_window_handle = get_suitable_window_handle()
+
+	for opt_name, opt_value in pairs(config.modes.minimalist.options) do
+		local ok, current_opt_value = pcall(vim.api.nvim_win_get_option, suitable_window_handle, opt_name)
+		if not ok then
+			current_opt_value = vim.api.nvim_get_option(opt_name)
+		end
+		saved_opts[opt_name] = current_opt_value
+		if is_special_opt(opt_name) then
+			set_opt_for_every_window(opt_name, opt_value)
+		else
+			vim.api.nvim_set_option(opt_name, opt_value)
+		end
+	end
+end
+
+function M.restore_opts()
+	for k, v in pairs(saved_opts) do
+		if is_special_opt(k) then
+			set_opt_for_every_window(k, v)
+		else
+			vim.api.nvim_set_option(k, v)
+		end
+	end
+end
+
+function M.set_highlights()
+	saved_highlights = {
 		TabLine = colors.get_hl("TabLine"),
 		TabLineFill = colors.get_hl("TabLineFill"),
 	}
+
+	local base = colors.get_hl("Normal")["background"] or "NONE"
+	for hi_group, _ in pairs(saved_highlights) do
+		colors.highlight(hi_group, { bg = base, fg = base }, true)
+	end
+end
+
+function M.restore_highlights()
+	for hi_group, props in pairs(saved_highlights) do
+		colors.highlight(hi_group, { fg = props.foreground, bg = props.background }, true)
+	end
 end
 
 function M.on()
+	if M.running then
+		return
+	end
+
 	data.do_callback("minimalist", "open", "pre")
 
-	save_opts()
+	M.set_highlights()
+	M.set_opts()
 
-	if cnf.modes.minimalist.options.number == false then
-		alldo({ "set nonumber" })
-	end
-
-	if cnf.modes.minimalist.options.relativenumber == false then
-		alldo({ "set norelativenumber" })
-	end
-
-	-- fully hide statusline and tabline
-	local base = colors.get_hl("Normal")["background"] or "NONE"
-	for hi_group, _ in pairs(original_opts["highlights"]) do
-		colors.highlight(hi_group, { bg = base, fg = base }, true)
-	end
-
-	if cnf.integrations.tmux == true then
+	if config.integrations.tmux then
 		require("true-zen.integrations.tmux").on()
 	end
 
 	M.running = true
-	data.do_callback("minimalist", "open", "pos")
+	data.do_callback("minimalist", "open", "post")
 end
 
 function M.off()
+	if not M.running then
+		return
+	end
+
 	data.do_callback("minimalist", "close", "pre")
 
-	api.nvim_create_augroup("TrueZenMinimalist", {
+	vim.api.nvim_create_augroup("TrueZenMinimalist", {
 		clear = true,
 	})
 
-	if original_opts.number == true then
-		alldo({ "set number" })
-	end
+	M.restore_highlights()
+	M.restore_opts()
 
-	if original_opts.relativenumber == true then
-		alldo({ "set relativenumber" })
-	end
-
-	original_opts.number = nil
-	original_opts.relativenumber = nil
-
-	for k, v in pairs(original_opts) do
-		if k ~= "highlights" then
-			o[k] = v
-		end
-	end
-
-	for hi_group, props in pairs(original_opts["highlights"]) do
-		colors.highlight(hi_group, { fg = props.foreground, bg = props.background }, true)
-	end
-
-	if cnf.integrations.tmux == true then
+	if config.integrations.tmux == true then
 		require("true-zen.integrations.tmux").off()
 	end
 
 	M.running = false
-	data.do_callback("minimalist", "close", "pos")
+	data.do_callback("minimalist", "close", "post")
 end
 
 function M.toggle()

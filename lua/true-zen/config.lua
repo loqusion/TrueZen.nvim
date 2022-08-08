@@ -1,6 +1,6 @@
 local config = {}
 
-config.options = {
+local default_options = {
 	modes = { -- configurations per mode
 		ataraxis = {
 			shade = "dark", -- if `dark` then dim the padding windows, otherwise if it's `light` it'll brighten said windows
@@ -18,9 +18,9 @@ config.options = {
 			},
 			callbacks = { -- run functions when opening/closing Ataraxis mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		minimalist = {
@@ -30,7 +30,7 @@ config.options = {
 				relativenumber = false,
 				showtabline = 0,
 				signcolumn = "no",
-				statusline = "",
+				statusline = "%#Normal#",
 				cmdheight = 1,
 				laststatus = 0,
 				showcmd = false,
@@ -40,9 +40,9 @@ config.options = {
 			},
 			callbacks = { -- run functions when opening/closing Minimalist mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		narrow = {
@@ -54,17 +54,17 @@ config.options = {
 			run_ataraxis = true, -- display narrowed text in a Ataraxis session
 			callbacks = { -- run functions when opening/closing Narrow mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		},
 		focus = {
 			callbacks = { -- run functions when opening/closing Focus mode
 				open_pre = nil,
-				open_pos = nil,
+				open_post = nil,
 				close_pre = nil,
-				close_pos = nil
+				close_post = nil
 			},
 		}
 	},
@@ -78,6 +78,9 @@ config.options = {
 		lualine = false -- hide nvim-lualine (ataraxis)
 	},
 }
+
+config.options = vim.deepcopy(default_options)
+
 function config.set_options(opts)
 	opts = opts or {}
 	config.options = vim.tbl_deep_extend("keep", opts, config.options)
