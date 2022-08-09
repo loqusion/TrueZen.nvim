@@ -7,13 +7,16 @@ local status
 local function is_status_on()
 	if string.find(capture("!tmux show-option -w status"), "status on") then
 		return true
-	elseif string.find(capture("!tmux show-option -w status"), "status") == nil and string.find(capture("!tmux show-option -g status"), "status on") then
-			return true
+	elseif
+		string.find(capture("!tmux show-option -w status"), "status") == nil
+		and string.find(capture("!tmux show-option -g status"), "status on")
+	then
+		return true
 	end
 end
 
 function M.on()
-	if vim.fn.exists('$TMUX') == 0 then
+	if vim.fn.exists("$TMUX") == 0 then
 		return
 	end
 

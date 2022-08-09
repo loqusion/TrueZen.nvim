@@ -21,8 +21,8 @@ function M.do_callback(mode, status, when)
 end
 
 -- taken from: https://stackoverflow.com/questions/22831701/lua-read-beginning-of-a-string
-function M.starts(str,start)
-   return string.sub(str,1,string.len(start))==start
+function M.starts(str, start)
+	return string.sub(str, 1, string.len(start)) == start
 end
 
 return M

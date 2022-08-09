@@ -20,7 +20,7 @@ local default_options = {
 				open_pre = nil,
 				open_post = nil,
 				close_pre = nil,
-				close_post = nil
+				close_post = nil,
 			},
 		},
 		minimalist = {
@@ -36,13 +36,13 @@ local default_options = {
 				showcmd = false,
 				showmode = false,
 				ruler = false,
-				numberwidth = 1
+				numberwidth = 1,
 			},
 			callbacks = { -- run functions when opening/closing Minimalist mode
 				open_pre = nil,
 				open_post = nil,
 				close_pre = nil,
-				close_post = nil
+				close_post = nil,
 			},
 		},
 		narrow = {
@@ -56,7 +56,7 @@ local default_options = {
 				open_pre = nil,
 				open_post = nil,
 				close_pre = nil,
-				close_post = nil
+				close_post = nil,
 			},
 		},
 		focus = {
@@ -64,18 +64,18 @@ local default_options = {
 				open_pre = nil,
 				open_post = nil,
 				close_pre = nil,
-				close_post = nil
+				close_post = nil,
 			},
-		}
+		},
 	},
 	integrations = {
 		tmux = false, -- hide tmux status bar in (minimalist, ataraxis)
 		kitty = { -- increment font size in Kitty. Note: you must set `allow_remote_control socket-only` and `listen_on unix:/tmp/kitty` in your personal config (ataraxis)
 			enabled = false,
-			font = "+3"
+			font = "+3",
 		},
 		twilight = false, -- enable twilight (ataraxis)
-		lualine = false -- hide nvim-lualine (ataraxis)
+		lualine = false, -- hide nvim-lualine (ataraxis)
 	},
 }
 

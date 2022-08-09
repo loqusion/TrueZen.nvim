@@ -5,7 +5,8 @@ local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
 local minimalist = require("true-zen.minimalist")
 local config = require("true-zen.config").options
-local global = require('true-zen.global')
+local global = require("true-zen.global")
+local lualine = require("true-zen.utils.lualine")
 local padding = config.modes.ataraxis.padding
 local minimum_writing_area = config.modes.ataraxis.minimum_writing_area
 local CARDINAL_POINTS = { left = "width", right = "width", top = "height", bottom = "height" }
@@ -88,7 +89,7 @@ end
 
 local function fix_padding(orientation, dimension, mod)
 	mod = mod or 0
-	local window_dimension = (vim.api.nvim_list_uis()[1][dimension] - mod) -- width or height
+	local window_dimension = (vim.api.nvim_list_uis()[1][dimension] - mod)
 	local mwa = minimum_writing_area[dimension]
 
 	if mwa >= window_dimension then
@@ -98,7 +99,7 @@ local function fix_padding(orientation, dimension, mod)
 			dimension == "width" and padding.left + padding.right + mwa or padding.top + padding.bottom + mwa
 		)
 		if wanted_available_size > window_dimension then
-			local available_space = window_dimension - mwa -- available space for padding on each side (e.g. left and right)
+			local available_space = window_dimension - mwa
 			return (available_space % 2 > 0 and ((available_space - 1) / 2) or available_space / 2)
 		else
 			return padding[orientation]
@@ -106,38 +107,38 @@ local function fix_padding(orientation, dimension, mod)
 	end
 end
 
-local function layout(action)
-	if action == "generate" then
-		local splitbelow, splitright = vim.o.splitbelow, vim.o.splitright
-		vim.o.splitbelow, vim.o.splitright = true, true
+local function generate_layout()
+	local splitbelow, splitright = vim.o.splitbelow, vim.o.splitright
+	vim.o.splitbelow, vim.o.splitright = true, true
 
-		local left_padding = fix_padding("left", "width")
-		local right_padding = fix_padding("right", "width")
-		local top_padding = fix_padding("top", "height")
-		local bottom_padding = fix_padding("bottom", "height")
+	local left_padding = fix_padding("left", "width")
+	local right_padding = fix_padding("right", "width")
+	local top_padding = fix_padding("top", "height")
+	local bottom_padding = fix_padding("bottom", "height")
 
-		win.main = vim.api.nvim_get_current_win()
+	win.main = vim.api.nvim_get_current_win()
 
-		win.left = pad_win("leftabove vnew", { width = left_padding }, "wincmd l") -- left buffer
-		win.right = pad_win("vnew", { width = right_padding }, "wincmd h") -- right buffer
-		win.top = pad_win("leftabove new", { height = top_padding }, "wincmd j") -- top buffer
-		win.bottom = pad_win("rightbelow new", { height = bottom_padding }, "wincmd k") -- bottom buffer
+	win.left = pad_win("leftabove vnew", { width = left_padding }, "wincmd l")
+	win.right = pad_win("vnew", { width = right_padding }, "wincmd h")
+	win.top = pad_win("leftabove new", { height = top_padding }, "wincmd j")
+	win.bottom = pad_win("rightbelow new", { height = bottom_padding }, "wincmd k")
 
-		vim.o.splitbelow, vim.o.splitright = splitbelow, splitright
-	else -- resize
-		local pad_sizes = {}
-		pad_sizes.left = fix_padding("left", "width")
-		pad_sizes.right = fix_padding("right", "width")
-		pad_sizes.top = fix_padding("top", "height")
-		pad_sizes.bottom = fix_padding("bottom", "height")
+	vim.o.splitbelow, vim.o.splitright = splitbelow, splitright
+end
 
-		for point, dimension in pairs(CARDINAL_POINTS) do
-			if vim.api.nvim_win_is_valid(win[point]) then
-				if dimension == "width" then
-					vim.api.nvim_win_set_width(win[point], pad_sizes[point])
-				else
-					vim.api.nvim_win_set_height(win[point], pad_sizes[point])
-				end
+local function resize_layout()
+	local pad_sizes = {}
+	pad_sizes.left = fix_padding("left", "width")
+	pad_sizes.right = fix_padding("right", "width")
+	pad_sizes.top = fix_padding("top", "height")
+	pad_sizes.bottom = fix_padding("bottom", "height")
+
+	for point, dimension in pairs(CARDINAL_POINTS) do
+		if vim.api.nvim_win_is_valid(win[point]) then
+			if dimension == "width" then
+				vim.api.nvim_win_set_width(win[point], pad_sizes[point])
+			else
+				vim.api.nvim_win_set_height(win[point], pad_sizes[point])
 			end
 		end
 	end
@@ -167,10 +168,10 @@ function M.on()
 	save_opts()
 
 	if vim.fn.filereadable(vim.fn.expand("%:p")) == 1 then
-		vim.cmd("tabe %")
+		vim.cmd("tabedit %")
 	end
 
-	layout("generate")
+	generate_layout()
 
 	vim.o.fillchars = "stl: ,stlnc: ,vert: ,diff: ,msgsep: ,eob: "
 
@@ -190,9 +191,13 @@ function M.on()
 		end
 	end
 
-	vim.api.nvim_create_autocmd({ "VimResized" }, { -- sorta works
+	if lualine.is_available() then
+		lualine.on()
+	end
+
+	vim.api.nvim_create_autocmd({ "VimResized" }, {
 		callback = function()
-			layout("resize")
+			resize_layout()
 		end,
 		group = "TrueZenAtaraxis",
 		desc = "Resize TrueZen pad windows after nvim has been resized",
@@ -201,7 +206,7 @@ function M.on()
 	vim.api.nvim_create_autocmd({ "WinEnter", "WinClosed" }, {
 		callback = function()
 			vim.schedule(function()
-				if vim.api.nvim_win_get_config(0).relative == "" then -- not a floating win
+				if vim.api.nvim_win_get_config(0).relative == "" then
 					if vim.w.tz_pad_win == nil and vim.api.nvim_get_current_win() ~= win.main then
 						local pad_sizes = {}
 						pad_sizes.left = fix_padding("left", "width", vim.api.nvim_win_get_width(0))
@@ -221,8 +226,7 @@ function M.on()
 							end
 						end
 					else
-						-- in tz win
-						layout("resize")
+						resize_layout()
 					end
 				end
 			end)
@@ -281,6 +285,10 @@ function M.off()
 		if (type(val) == "table" and val.enabled or val) == true and integration ~= "tmux" then
 			require("true-zen.integrations." .. integration).off()
 		end
+	end
+
+	if lualine.is_available() then
+		lualine.off()
 	end
 
 	if cursor_pos ~= nil then

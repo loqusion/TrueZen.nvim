@@ -5,6 +5,7 @@ local data = require("true-zen.utils.data")
 local config = require("true-zen.config").options
 local colors = require("true-zen.utils.colors")
 local global = require("true-zen.global")
+local lualine = require("true-zen.utils.lualine")
 local IGNORED_BUF_TYPES = data.set_of(config.modes.minimalist.ignored_buf_types)
 
 local saved_opts = {}
@@ -108,6 +109,10 @@ function M.on()
 		require("true-zen.integrations.tmux").on()
 	end
 
+	if lualine.is_available() then
+		lualine.on()
+	end
+
 	M.running = true
 	data.do_callback("minimalist", "open", "post")
 end
@@ -128,6 +133,10 @@ function M.off()
 
 	if config.integrations.tmux == true then
 		require("true-zen.integrations.tmux").off()
+	end
+
+	if lualine.is_available() then
+		lualine.off()
 	end
 
 	M.running = false
