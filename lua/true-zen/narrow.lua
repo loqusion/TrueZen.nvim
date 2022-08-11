@@ -9,6 +9,7 @@ local FOLDS_STYLE = config.modes.narrow.folds_style
 
 vim.g.active_buffs = 0
 local original_opts = {}
+local original_highlights
 
 vim.api.nvim_create_augroup("TrueZenNarrow", {
 	clear = true,
@@ -27,7 +28,7 @@ function M.custom_folds_style()
 	return ""
 end
 
-local function save_buff_settings()
+local function save_buffer_options()
 	original_opts.foldenable = vim.wo.foldenable
 	original_opts.foldmethod = vim.wo.foldmethod
 	original_opts.foldminlines = vim.wo.foldminlines
@@ -49,18 +50,19 @@ function M.on(line1, line2)
 
 	data.do_callback("narrow", "open", "pre")
 
-	local beg_line = normalize_line(line1, "head")
-	local end_line = normalize_line(line2, "tail")
-	local curr_pos = vim.fn.getpos(".")
+	local saved_pos = vim.fn.getpos(".")
+
+	local first_line = normalize_line(line1, "head")
+	local last_line = normalize_line(line2, "tail")
 
 	if vim.g.active_buffs <= 0 then
-		save_buff_settings()
+		save_buffer_options()
 	end
 
 	if FOLDS_STYLE == "invisible" then
 		local bkg_color = colors.get_hl("Normal")["background"] or "NONE"
 		colors.highlight("Folded", { fg = bkg_color, bg = bkg_color }, true)
-		original_opts.highlights = {
+		original_highlights = {
 			Folded = colors.get_hl("Folded"),
 		}
 	end
@@ -72,16 +74,18 @@ function M.on(line1, line2)
 
 	vim.cmd("normal! zE")
 
-	if beg_line > 1 then
-		vim.cmd([[execute '1,' (]] .. beg_line .. [[ - 1) 'fold']])
+	if first_line > 1 then
+		vim.cmd([[execute '1,' (]] .. first_line .. [[ - 1) 'fold']])
 	end
 
-	if end_line < vim.fn.line("$") then
-		vim.cmd([[execute (]] .. end_line .. [[ + 1) ',$' 'fold']])
+	if last_line < vim.fn.line("$") then
+		vim.cmd([[execute (]] .. last_line .. [[ + 1) ',$' 'fold']])
 	end
 
 	vim.wo.foldtext = 'v:lua.require("true-zen.narrow").custom_folds_style()'
-	vim.fn.setpos(".", curr_pos)
+
+	vim.fn.setpos(".", saved_pos)
+
 	vim.cmd("normal! zz")
 
 	if config.modes.narrow.run_ataraxis == true then
@@ -132,18 +136,17 @@ function M.off()
 	vim.fn.setpos(".", curr_pos)
 
 	for k, v in pairs(original_opts) do
-		if k ~= "highlights" then
-			vim.o[k] = v
-		end
+		vim.o[k] = v
 	end
 
-	if original_opts["highlights"] ~= nil then
-		for hi_group, props in pairs(original_opts["highlights"]) do
+	if original_highlights ~= nil then
+		for hi_group, props in pairs(original_highlights) do
 			colors.highlight(hi_group, { fg = props.foreground, bg = props.background }, true)
 		end
 	end
 
 	original_opts = {}
+	original_highlights = {}
 	data.do_callback("narrow", "close", "post")
 end
 

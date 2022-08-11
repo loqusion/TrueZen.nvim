@@ -3,10 +3,9 @@ local M = {}
 M.running = false
 local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
-local minimalist = require("true-zen.minimalist")
+local blank = require("true-zen.utils.blank")
 local config = require("true-zen.config").options
 local global = require("true-zen.global")
-local lualine = require("true-zen.utils.lualine")
 local padding = config.modes.ataraxis.padding
 local minimum_writing_area = config.modes.ataraxis.minimum_writing_area
 local CARDINAL_POINTS = { left = "width", right = "width", top = "height", bottom = "height" }
@@ -163,8 +162,7 @@ function M.on()
 		})
 	end
 
-	minimalist.set_highlights()
-	minimalist.set_opts()
+	blank.on()
 	save_opts()
 
 	if vim.fn.filereadable(vim.fn.expand("%:p")) == 1 then
@@ -189,10 +187,6 @@ function M.on()
 		if (type(val) == "table" and val.enabled or val) == true and integration ~= "tmux" then
 			require("true-zen.integrations." .. integration).on()
 		end
-	end
-
-	if lualine.is_available() then
-		lualine.on()
 	end
 
 	vim.api.nvim_create_autocmd({ "VimResized" }, {
@@ -260,8 +254,8 @@ function M.off()
 	if vim.fn.filereadable(vim.fn.expand("%:p")) == 1 then
 		vim.cmd("q")
 	end
-	minimalist.restore_highlights()
-	minimalist.restore_opts()
+
+	blank.off()
 
 	for k, v in pairs(original_opts) do
 		vim.o[k] = v
@@ -285,10 +279,6 @@ function M.off()
 		if (type(val) == "table" and val.enabled or val) == true and integration ~= "tmux" then
 			require("true-zen.integrations." .. integration).off()
 		end
-	end
-
-	if lualine.is_available() then
-		lualine.off()
 	end
 
 	if cursor_pos ~= nil then

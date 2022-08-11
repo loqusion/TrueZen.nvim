@@ -19,8 +19,8 @@ function M.on()
 		return
 	end
 	vim.cmd("tab split")
-	M.running = true
 
+	M.running = true
 	data.do_callback("focus", "open", "post")
 end
 
@@ -32,8 +32,8 @@ function M.off()
 	data.do_callback("focus", "close", "pre")
 
 	vim.cmd("tabclose")
-	M.running = false
 
+	M.running = false
 	data.do_callback("focus", "close", "post")
 end
 

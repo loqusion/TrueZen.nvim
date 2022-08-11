@@ -4,7 +4,7 @@ local config = require("true-zen.config").options
 
 local hidden = false
 
-function M.on()
+function M.hide()
 	if hidden then
 		return
 	end
@@ -14,7 +14,7 @@ function M.on()
 	hidden = true
 end
 
-function M.off()
+function M.show()
 	if not hidden then
 		return
 	end
