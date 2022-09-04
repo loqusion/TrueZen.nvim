@@ -1,14 +1,21 @@
-local M = {}
+local M = {
+	running = false,
+}
 
-M.running = false
 local colors = require("true-zen.utils.colors")
 local data = require("true-zen.utils.data")
 local blank = require("true-zen.utils.blank")
 local config = require("true-zen.config").options
 local global = require("true-zen.global")
+
 local padding = config.modes.ataraxis.padding
 local minimum_writing_area = config.modes.ataraxis.minimum_writing_area
-local CARDINAL_POINTS = { left = "width", right = "width", top = "height", bottom = "height" }
+local CARDINAL_POINTS = {
+	left = "width",
+	right = "width",
+	top = "height",
+	bottom = "height",
+}
 
 local base = colors.get_hl("Normal")["background"] or "NONE"
 
@@ -88,18 +95,19 @@ end
 
 local function fix_padding(orientation, dimension, mod)
 	mod = mod or 0
-	local window_dimension = (vim.api.nvim_list_uis()[1][dimension] - mod)
+	local window_dimension = vim.api.nvim_list_uis()[1][dimension] - mod
 	local mwa = minimum_writing_area[dimension]
 
 	if mwa >= window_dimension then
 		return 1
 	else
 		local wanted_available_size = (
-			dimension == "width" and padding.left + padding.right + mwa or padding.top + padding.bottom + mwa
-		)
+				dimension == "width" and (padding.left + padding.right) or (padding.top + padding.bottom)
+			) + mwa
+
 		if wanted_available_size > window_dimension then
 			local available_space = window_dimension - mwa
-			return (available_space % 2 > 0 and ((available_space - 1) / 2) or available_space / 2)
+			return math.floor(available_space / 2)
 		else
 			return padding[orientation]
 		end
@@ -149,7 +157,6 @@ function M.on()
 	end
 
 	global.off()
-
 	data.do_callback("ataraxis", "open", "pre")
 
 	local cursor_pos = vim.fn.getpos(".")

@@ -1,6 +1,7 @@
-local M = {}
+local M = {
+	running = false,
+}
 
-M.running = false
 local data = require("true-zen.utils.data")
 local echo = require("true-zen.utils.echo")
 local global = require("true-zen.global")
