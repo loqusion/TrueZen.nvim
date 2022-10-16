@@ -29,12 +29,16 @@ if base ~= "NONE" and config.modes.ataraxis.backdrop ~= 0 then
 	colors.highlight("TZBackground", { fg = base, bg = base }, true)
 end
 
-vim.api.nvim_create_augroup("TrueZenAtaraxis", {
+local ataraxis_augroup_name = 'TrueZenAtaraxis'
+
+vim.api.nvim_create_augroup(ataraxis_augroup_name, {
 	clear = true,
 })
 
-local original_opts = {}
-local original_highlights = {}
+local saved = {
+	opts = {},
+	hi_groups = {},
+}
 local win = {}
 local opts = {
 	bo = {
@@ -55,8 +59,8 @@ local opts = {
 }
 
 local function save_opts()
-	original_opts.fillchars = vim.o.fillchars
-	original_highlights = {
+	saved.opts.fillchars = vim.o.fillchars
+	saved.hi_groups = {
 		just_bg = {
 			MsgArea = colors.get_hl("MsgArea"),
 		},
@@ -151,56 +155,21 @@ local function resize_layout()
 	end
 end
 
-function M.on()
-	if M.running then
-		return
-	end
-
-	global.off()
-	data.do_callback("ataraxis", "open", "pre")
-
-	local cursor_pos = vim.fn.getpos(".")
+local function create_autocmds()
 	if config.modes.ataraxis.quit_untoggles == true then
 		vim.api.nvim_create_autocmd({ "QuitPre" }, {
 			callback = function()
 				M.off()
 			end,
-			group = "TrueZenAtaraxis",
+			group = ataraxis_augroup_name,
 		})
-	end
-
-	blank.on()
-	save_opts()
-
-	if vim.fn.filereadable(vim.fn.expand("%:p")) == 1 then
-		vim.cmd("tabedit %")
-	end
-
-	generate_layout()
-
-	vim.o.fillchars = "stl: ,stlnc: ,vert: ,diff: ,msgsep: ,eob: "
-
-	for hi_group, _ in pairs(original_highlights) do
-		if hi_group == "just_bg" then
-			for bg_hi_group, _ in pairs(original_highlights["just_bg"]) do
-				colors.highlight(bg_hi_group, { bg = base })
-			end
-		else
-			colors.highlight(hi_group, { bg = base, fg = base })
-		end
-	end
-
-	for integration, val in pairs(config.integrations) do
-		if (type(val) == "table" and val.enabled or val) == true and integration ~= "tmux" then
-			require("true-zen.integrations." .. integration).on()
-		end
 	end
 
 	vim.api.nvim_create_autocmd({ "VimResized" }, {
 		callback = function()
 			resize_layout()
 		end,
-		group = "TrueZenAtaraxis",
+		group = ataraxis_augroup_name,
 		desc = "Resize TrueZen pad windows after nvim has been resized",
 	})
 
@@ -232,11 +201,51 @@ function M.on()
 				end
 			end)
 		end,
-		group = "TrueZenAtaraxis",
+		group = ataraxis_augroup_name,
 		desc = "Asser whether to resize TrueZen pad windows or not",
 	})
+end
 
-	vim.fn.setpos(".", cursor_pos)
+function M.on()
+	if M.running then
+		return
+	end
+
+	global.off()
+	data.do_callback("ataraxis", "open", "pre")
+
+	local saved_curpos = vim.fn.getcurpos(".")
+
+	if vim.fn.filereadable(vim.fn.expand("%:p")) == 1 then
+		vim.cmd("tabedit %")
+	end
+
+	blank.on()
+	save_opts()
+
+	generate_layout()
+
+	vim.o.fillchars = "stl: ,stlnc: ,vert: ,diff: ,msgsep: ,eob: "
+
+	for hi_group, _ in pairs(saved.hi_groups) do
+		if hi_group == "just_bg" then
+			for bg_hi_group, _ in pairs(saved.hi_groups["just_bg"]) do
+				colors.highlight(bg_hi_group, { bg = base })
+			end
+		else
+			colors.highlight(hi_group, { bg = base, fg = base })
+		end
+	end
+
+	for integration, val in pairs(config.integrations) do
+		if (type(val) == "table" and val.enabled or val) == true and integration ~= "tmux" then
+			require("true-zen.integrations." .. integration).on()
+		end
+	end
+
+	create_autocmds()
+
+	vim.fn.setpos(".", saved_curpos)
 	M.running = true
 	data.do_callback("ataraxis", "open", "post")
 end
@@ -264,13 +273,13 @@ function M.off()
 
 	blank.off()
 
-	for k, v in pairs(original_opts) do
+	for k, v in pairs(saved.opts) do
 		vim.o[k] = v
 	end
 
-	for hi_group, props in pairs(original_highlights) do
+	for hi_group, props in pairs(saved.hi_groups) do
 		if hi_group == "just_bg" then
-			for bg_hi_group, bg_props in pairs(original_highlights["just_bg"]) do
+			for bg_hi_group, bg_props in pairs(saved.hi_groups["just_bg"]) do
 				colors.highlight(bg_hi_group, { bg = bg_props.background })
 			end
 		else
@@ -278,7 +287,7 @@ function M.off()
 		end
 	end
 
-	vim.api.nvim_create_augroup("TrueZenAtaraxis", {
+	vim.api.nvim_create_augroup(ataraxis_augroup_name, {
 		clear = true,
 	})
 

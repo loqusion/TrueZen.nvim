@@ -10,6 +10,7 @@ local default_options = {
 				height = 44,
 			},
 			quit_untoggles = true, -- type :q or :qa to quit Ataraxis mode
+			restore_after_quit = false, -- original window & cursor position restored after quit
 			padding = { -- padding windows
 				left = 52,
 				right = 52,

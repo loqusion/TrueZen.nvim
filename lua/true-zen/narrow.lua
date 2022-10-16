@@ -7,9 +7,9 @@ local data = require("true-zen.utils.data")
 local global = require("true-zen.global")
 local FOLDS_STYLE = config.modes.narrow.folds_style
 
-vim.g.active_buffs = 0
-local original_opts = {}
-local original_highlights
+vim.g.active_buffers = 0
+local saved_opts = {}
+local saved_highlight_groups
 
 vim.api.nvim_create_augroup("TrueZenNarrow", {
 	clear = true,
@@ -29,11 +29,11 @@ function M.custom_folds_style()
 end
 
 local function save_buffer_options()
-	original_opts.foldenable = vim.wo.foldenable
-	original_opts.foldmethod = vim.wo.foldmethod
-	original_opts.foldminlines = vim.wo.foldminlines
-	original_opts.foldtext = vim.wo.foldtext
-	original_opts.fillchars = vim.wo.fillchars
+	saved_opts.foldenable = vim.wo.foldenable
+	saved_opts.foldmethod = vim.wo.foldmethod
+	saved_opts.foldminlines = vim.wo.foldminlines
+	saved_opts.foldtext = vim.wo.foldtext
+	saved_opts.fillchars = vim.wo.fillchars
 end
 
 local function normalize_line(line, mode)
@@ -55,14 +55,14 @@ function M.on(line1, line2)
 	local first_line = normalize_line(line1, "head")
 	local last_line = normalize_line(line2, "tail")
 
-	if vim.g.active_buffs <= 0 then
+	if vim.g.active_buffers <= 0 then
 		save_buffer_options()
 	end
 
 	if FOLDS_STYLE == "invisible" then
 		local bkg_color = colors.get_hl("Normal")["background"] or "NONE"
 		colors.highlight("Folded", { fg = bkg_color, bg = bkg_color }, true)
-		original_highlights = {
+		saved_highlight_groups = {
 			Folded = colors.get_hl("Folded"),
 		}
 	end
@@ -97,14 +97,14 @@ function M.on(line1, line2)
 				group = "TrueZenNarrow",
 			})
 		end
-		if vim.g.active_buffs <= 0 then
+		if vim.g.active_buffers <= 0 then
 			require("true-zen.ataraxis").on()
 		end
 	end
 
 	vim.wo.fillchars = (vim.o.fillchars ~= "" and vim.o.fillchars .. "," or "") .. "fold: "
 
-	vim.g.active_buffs = vim.g.active_buffs + 1
+	vim.g.active_buffers = vim.g.active_buffers + 1
 	data.do_callback("narrow", "open", "post")
 end
 
@@ -115,11 +115,11 @@ function M.off()
 
 	data.do_callback("narrow", "close", "pre")
 
-	vim.g.active_buffs = (vim.g.active_buffs > 0 and vim.g.active_buffs or 1) - 1
+	vim.g.active_buffers = (vim.g.active_buffers > 0 and vim.g.active_buffers or 1) - 1
 	vim.b.tz_narrowed_buffer = nil
 
 	if config.modes.narrow.run_ataraxis == true then
-		if vim.g.active_buffs <= 0 then
+		if vim.g.active_buffers <= 0 then
 			require("true-zen.ataraxis").off()
 		end
 	end
@@ -135,18 +135,18 @@ function M.off()
 	vim.cmd("normal! zz")
 	vim.fn.setpos(".", curr_pos)
 
-	for k, v in pairs(original_opts) do
+	for k, v in pairs(saved_opts) do
 		vim.o[k] = v
 	end
 
-	if original_highlights ~= nil then
-		for hi_group, props in pairs(original_highlights) do
+	if saved_highlight_groups ~= nil then
+		for hi_group, props in pairs(saved_highlight_groups) do
 			colors.highlight(hi_group, { fg = props.foreground, bg = props.background }, true)
 		end
 	end
 
-	original_opts = {}
-	original_highlights = {}
+	saved_opts = {}
+	saved_highlight_groups = {}
 	data.do_callback("narrow", "close", "post")
 end
 
